@@ -1,30 +1,64 @@
 ## Introduction
 
-In this assessment lab, you will explore basic techniques for retrieving and transforming data using SQL (Structured Query Language) in Python. You will be working with the employees table stored in the `data.sqlite` file and your code for this lab will be in `main.py`. You can run `pytest` and use print statements to check your code as you go. Imagine that you are working within the HR department of the fictional Northwinds Company as a data specialist/analyst and need to be able to easily access select employee records. SQL is just the tool you need!
-<br /><br />
-SQL is a powerful language that allows us to interact with relational databases and perform various operations on the data. By leveraging SQL queries, we can efficiently retrieve specific subsets of data, create meaningful aliases for improved readability, transform selected columns using CASE statements, and utilize built-in SQL functions to perform advanced transformations.
+Welcome to the SQL Lab! In this assessment, you will learn how to use **SQL (Structured Query Language)** to work with databases in Python. 
+
+**The Scenario:** You're working as a data specialist in the HR department of the fictional Northwind Company. Your job is to extract and analyze employee data from the company database. Instead of manually looking through spreadsheets, you'll use SQL to quickly get exactly the data you need!
+
+**What You'll Learn:**
+- How to connect to a database using Python
+- How to write SQL queries to retrieve data
+- How to filter, transform, and organize data using SQL functions
+- How to use aliases and conditional logic (CASE statements) to make your results clearer
+
+All your work will go in the `main.py` file, and the employee data is stored in the `data.sqlite` file. You can test your work anytime by running `pytest` or checking the print statements with `python3 main.py`.
 
 ## Learning Objectives
 
-* Connect to a SQL Database file 
-* Use SELECT in SQL to select columns from a database
-* Use SQL built-in functions to manipulate the values of the given database
+By the end of this lab, you'll be able to:
+
+✓ **Connect to a database** - Set up a Python connection to a SQLite database file  
+✓ **Write SELECT queries** - Choose specific columns from a table using `SELECT`  
+✓ **Order and rename columns** - Arrange columns the way you want and use `AS` to rename them  
+✓ **Use conditional logic** - Use `CASE` statements to categorize data  
+✓ **Manipulate text** - Extract parts of text with `SUBSTR()` and get text length with `LENGTH()`  
+✓ **Do math with data** - Calculate totals with `SUM()`, `ROUND()`, and multiplication  
+✓ **Work with dates** - Extract day, month, and year from date strings
+
+## Getting Started
+
+### Prerequisites
+Before you start, you need to set up your Python environment:
+
+1. **Install dependencies:** Run `pipenv install` to download and install the required libraries (sqlite3 and pandas)
+2. **Activate the environment:** Run `pipenv shell` to start using the environment
+
+### How to Test Your Work
+- **Run all tests:** `pytest` - This checks if all your solutions are correct
+- **Run one test at a time:** `pytest -x` - Stops after the first test (useful for debugging)
+- **See print output:** `python3 main.py` - Runs your code and shows any print statements
 
 ## Part 1: Connecting to Data
 
-A SQL database file has been provided that contains the Northwind company's product, customer and employee data (fictional). For the scope of this assessment you will focus mostly on the employees tables. You will be asked to retrieve specific information/data using SQL queries in tandem with Pandas to load the results into a DataFrame.
-<br /><br />
-Example:
+The database file (`data.sqlite`) contains real company data from Northwind, including products, customers, and employees. In this lab, you'll focus mainly on the **employees** table.
+
+### How SQL Results Work with Python
+We'll use `pd.read_sql()` to run SQL queries and get results as a **pandas DataFrame** (basically a table in Python):
 
 ```python
+# This runs a SQL query and loads the results into a DataFrame
 df_answer = pd.read_sql("""SELECT * FROM some_table""", connection)
 ```
 
-Start by running `pipenv install` and `pipenv shell`. You can run the test suite at any time to check your work with `pytest` or `pytest -x` if you want to just run 1 test at a time. You can run the file to check print statement outputs with `python3 main.py`.
+Think of it like this:
+- **SELECT \*** = "Get all columns"
+- **FROM some_table** = "From this table"
+- The result becomes a DataFrame with rows and columns, just like a spreadsheet!
 
-### Step 1
+### Step 1: Set Up Your Connection
 
-In `main.py` import the necessary libraries, sqlite3 and pandas. Use the standard alias for the pandas library. Create a connection to the **data.sqlite** database file and store it as the variable conn.
+**Task:** Import the libraries you need and connect to the database.
+
+In `main.py`, you'll see:
 
 ```python
 # STEP 1A
@@ -35,7 +69,12 @@ In `main.py` import the necessary libraries, sqlite3 and pandas. Use the standar
 conn = None
 ```
 
-As previously stated, this database contains multiple tables but for this assessment you will focus on querying data from the **employees** table and later from the **orderDetails** table. Below, we have provided code that selects all columns and rows from the **employees** table for you to use as reference.
+**What you need to do:**
+1. Import `sqlite3` - This lets you work with SQL databases
+2. Import `pandas as pd` - This lets you work with data as tables
+3. Create a connection to `data.sqlite` by using `sqlite3.connect('data.sqlite')`
+
+**Try it out:** After you set up the connection, run this code to see all employees:
 
 ```python
 # Add code below and run file to see data from employees table
@@ -45,11 +84,15 @@ print(employee_data)
 print("-------------------End Employee Data-------------------")
 ```
 
-## Part 2: Basic Select Filtering
+This will print out a table with all the employees and their information.
 
-### Step 2
+## Part 2: Selecting Specific Columns
 
-Assign the variable `df_first_five` to the employee number and last name from all employees in the employees table in the database. Your result should only contain those two columns.
+In this part, you'll learn to choose exactly which columns you want from your data. Instead of getting all columns (with `SELECT *`), you'll pick specific ones.
+
+### Step 2: Select Specific Columns
+
+**Task:** Get the employee number and last name for all employees. Only include these two columns.
 
 ```python
 # STEP 2
@@ -57,9 +100,14 @@ Assign the variable `df_first_five` to the employee number and last name from al
 df_first_five = None
 ```
 
-### Step 3
+**Hint:** Use `SELECT` to list which columns you want, separated by commas. For example:
+```sql
+SELECT columnName1, columnName2 FROM tableName
+```
 
-Repeat Step 2, but have the last name come before the employee number and assign to `df_five_reverse`.
+### Step 3: Reverse Column Order
+
+**Task:** Do the same as Step 2, but put the last name first and employee number second.
 
 ```python
 # STEP 3
@@ -67,11 +115,13 @@ Repeat Step 2, but have the last name come before the employee number and assign
 df_five_reverse = None
 ```
 
-## Part 3: Aliasing in Select
+**Why this matters:** Sometimes the order of columns matters for how you want to see your data. SQL lets you arrange columns any way you like!
 
-### Step 4
+## Part 3: Renaming Columns with Aliases
 
-Repeat step 3, but this time use an alias to rename the employee number column as 'ID' and assign to `df_alias`.
+### Step 4: Use Aliases to Rename Columns
+
+**Task:** Repeat Step 3, but rename the `employeeNumber` column to just `ID`.
 
 ```python
 # STEP 4
@@ -79,21 +129,26 @@ Repeat step 3, but this time use an alias to rename the employee number column a
 df_alias = None
 ```
 
-### Step 5
+**What's an alias?** An alias is a temporary nickname for a column. Use the `AS` keyword:
 
-Use `CASE` to bin where the jobTitles of President, VP Sales, or VP Marketing have the `role` of "Executive", and the rest of the employes are "Not Executive".
-
-<br /><br />
-
-Define the result of the `CASE` as a new column called `role`. Assign to  the variable `df_executive`.
-
-<br />
-
-***Hint:*** For the WHEN clause if we were looking at Managers, we'd have:
-
+```sql
+SELECT columnName AS newName FROM tableName
 ```
-WHEN jobTitle = "Sales Manager (APAC)" OR jobTitle = "Sale Manager (EMEA)" OR jobTitle = "Sales Manager (NA)" THEN "Manager"
+
+**Example:**
+```sql
+SELECT firstName AS 'First Name', lastName AS 'Last Name' FROM employees
 ```
+
+This makes your column headers clearer and easier to read!
+
+## Part 4: Using CASE Statements
+
+### Step 5: Categorize Employees with CASE
+
+**Task:** Create a new column called `role` that categorizes employees as either "Executive" or "Not Executive".
+- **Executive:** President, VP Sales, VP Marketing
+- **Not Executive:** Everyone else
 
 ```python
 # STEP 5
@@ -101,11 +156,34 @@ WHEN jobTitle = "Sales Manager (APAC)" OR jobTitle = "Sale Manager (EMEA)" OR jo
 df_executive = None
 ```
 
-## Part 5: Built-in Functions - Strings
+**What's a CASE statement?** It's like an `if-else` statement in SQL. Here's the pattern:
 
-### Step 6
+```sql
+CASE 
+    WHEN condition1 THEN result1
+    WHEN condition2 THEN result2
+    ELSE defaultResult
+END AS columnName
+```
 
-Find the length of the last name for all employees, return only this data as a new column called `name_length`. Assign to `df_name_length`.
+**Example hint:** If we wanted to categorize by Managers:
+
+```sql
+WHEN jobTitle = "Sales Manager (APAC)" OR jobTitle = "Sale Manager (EMEA)" OR jobTitle = "Sales Manager (NA)" THEN "Manager"
+```
+
+You'll do something similar, but for the three executive roles!
+
+## Part 5: String Functions (Text Manipulation)
+
+SQL has built-in functions to work with text. Here are two useful ones:
+
+- **`LENGTH(text)`** - Counts how many characters are in a piece of text
+- **`SUBSTR(text, start, length)`** - Pulls out a piece of text starting at a position
+
+### Step 6: Find Text Length
+
+**Task:** Get the length (number of characters) of each employee's last name. Return only this data in a column called `name_length`.
 
 ```python
 # STEP 6
@@ -113,9 +191,11 @@ Find the length of the last name for all employees, return only this data as a n
 df_name_length = None
 ```
 
-### Step 7
+**Hint:** Use the `LENGTH()` function on the `lastName` column.
 
-Return only one new column called `short_title`, that contains the first two letters of each persons job title. Assign to `df_short_title`.
+### Step 7: Extract Part of Text
+
+**Task:** Get the first two letters of each employee's job title. Create a column called `short_title`.
 
 ```python
 # STEP 7
@@ -123,37 +203,36 @@ Return only one new column called `short_title`, that contains the first two let
 df_short_title = None
 ```
 
-## Part 6: Built-in Functions - Numerics
+**Hint:** Use `SUBSTR(column, 1, 2)` to get the first 2 characters:
+- First `1` = start at position 1
+- Second `2` = take 2 characters
 
-### Bring in another table from the database
+## Part 6: Math and Date Functions
 
-In the code below we have provided a look at a new table within the database provided. This table contains data pertaining to orders placed with the company and has some good numerical and date columns to explore.
+Now you'll work with the `orders` and `orderDetails` tables to practice math and date manipulation.
+
+### First, Look at Order Details
+
+Run this code to see what the order data looks like:
 
 ```python
 # Add the code below and run the file to see order details data
-
 order_details = pd.read_sql("""SELECT * FROM orderDetails;""", conn)
 print("------------------Order Details Data------------------")
 print(order_details)
 print("----------------End Order Details Data----------------")
 ```
 
-### Step 8
+You'll see columns like `priceEach` and `quantityOrdered` - perfect for doing math!
 
-Find the total amount for all orders, calculated as the sum of rounded total prices, where the total price for each order is the `priceEach` multiplied by the `quantityOrdered`. Make sure you are rounding this internal product result.
+### Step 8: Calculate Total Revenue
 
-Hint: Append `.sum()` to the end of your returned query that contains total price for each order, in order to create the total amount. You could also use the `SUM()` built-in SQL function as well.
+**Task:** Find the total amount for ALL orders combined.
 
-<br /><br />
-
-For example:
-
-```python
-sum_total = pd.read_sql("""
-SELECT total_price
-FROM some_table
-""", conn).sum()
-```
+To do this:
+1. Multiply `priceEach` × `quantityOrdered` for each item
+2. Round each result to the nearest whole number (using `ROUND()`)
+3. Add them all up using `SUM()`
 
 ```python
 # STEP 8
@@ -161,9 +240,27 @@ FROM some_table
 sum_total_price = None
 ```
 
-### Step 9
+**Hint:** You can write the calculation right in your SELECT statement:
 
-It is common in other parts of the world as well as the US Military to have dates as Day/Month/Year. Return the original order date column followed by three new columns that display the order date in this format with column names 'day', 'month', and 'year' respectively.
+```python
+sum_total = pd.read_sql("""
+SELECT SUM(ROUND(priceEach * quantityOrdered)) as total
+FROM orderDetails
+""", conn).iloc[0].values
+```
+
+The `.iloc[0].values` at the end gets the first (and only) row's value.
+
+### Step 9: Parse Dates
+
+**Task:** Break down each order date into separate day, month, and year columns.
+
+The dates are stored as `YYYY-MM-DD` (like `2003-01-06`). You need to extract:
+- **Day** (the `06`)
+- **Month** (the `01`)
+- **Year** (the `2003`)
+
+And display them in Day/Month/Year format.
 
 ```python
 # STEP 9
@@ -171,8 +268,17 @@ It is common in other parts of the world as well as the US Military to have date
 df_day_month_year = None
 ```
 
-### Close the connection
+**Hint:** Use `SUBSTR()` to pull out pieces of the date string:
+- Position 1-4 = Year
+- Position 6-7 = Month
+- Position 9-10 = Day
+
+### Finish Up
+
+Don't forget to close your database connection when you're done:
 
 ```python
 conn.close()
 ```
+
+**Why?** Closing connections is good practice - it frees up resources and keeps your database safe.
