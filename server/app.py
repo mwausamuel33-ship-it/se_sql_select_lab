@@ -1,6 +1,5 @@
 """
 Flask application for the workout tracking API.
-Initializes database, migrations, and routes.
 """
 from flask import Flask, make_response, jsonify, request
 from flask_migrate import Migrate
@@ -13,7 +12,7 @@ from sqlalchemy.exc import IntegrityError
 from marshmallow import ValidationError
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////home/samuel/sqllab/se_sql_select_lab/instance/app.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///instance/app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 migrate = Migrate(app, db)
@@ -70,9 +69,6 @@ def create_exercise():
 
     except ValidationError as e:
         return make_response(jsonify({'errors': e.messages}), 400)
-    except IntegrityError as e:
-        db.session.rollback()
-        return make_response(jsonify({'error': 'Exercise with this name and category already exists'}), 400)
     except Exception as e:
         db.session.rollback()
         return make_response(jsonify({'error': str(e)}), 400)
@@ -86,7 +82,6 @@ def delete_exercise(exercise_id):
         if not exercise:
             return make_response(jsonify({'error': 'Exercise not found'}), 404)
 
-        # Delete associated WorkoutExercises (cascade delete)
         db.session.delete(exercise)
         db.session.commit()
         return make_response(jsonify({}), 204)
@@ -107,7 +102,7 @@ def get_workouts():
 
 @app.route('/workouts/<int:workout_id>', methods=['GET'])
 def get_workout(workout_id):
-    """GET /workouts/<id> - Show a single workout with its associated exercises and reps/sets/duration data."""
+    """GET /workouts/<id> - Show a single workout with its associated exercises."""
     workout = Workout.query.get(workout_id)
     if not workout:
         return make_response(jsonify({'error': 'Workout not found'}), 404)
@@ -134,9 +129,6 @@ def create_workout():
 
     except ValidationError as e:
         return make_response(jsonify({'errors': e.messages}), 400)
-    except IntegrityError as e:
-        db.session.rollback()
-        return make_response(jsonify({'error': 'Invalid workout data'}), 400)
     except Exception as e:
         db.session.rollback()
         return make_response(jsonify({'error': str(e)}), 400)
@@ -150,7 +142,6 @@ def delete_workout(workout_id):
         if not workout:
             return make_response(jsonify({'error': 'Workout not found'}), 404)
 
-        # Delete associated WorkoutExercises (cascade delete)
         db.session.delete(workout)
         db.session.commit()
         return make_response(jsonify({}), 204)
@@ -179,7 +170,6 @@ def add_exercise_to_workout(workout_id, exercise_id):
         if errors:
             return make_response(jsonify(errors), 400)
 
-        # Check if this exercise is already in this workout
         existing = WorkoutExercise.query.filter_by(
             workout_id=workout_id,
             exercise_id=exercise_id
@@ -203,15 +193,13 @@ def add_exercise_to_workout(workout_id, exercise_id):
 
     except ValidationError as e:
         return make_response(jsonify({'errors': e.messages}), 400)
-    except IntegrityError as e:
-        db.session.rollback()
-        return make_response(jsonify({'error': 'Invalid workout exercise data'}), 400)
     except Exception as e:
         db.session.rollback()
         return make_response(jsonify({'error': str(e)}), 400)
 
 
 # Error handlers
+
 @app.errorhandler(404)
 def not_found(error):
     """Handle 404 errors."""
