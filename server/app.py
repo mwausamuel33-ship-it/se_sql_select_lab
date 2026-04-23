@@ -1,24 +1,21 @@
-"""
-Flask application for the workout tracking API.
-"""
+import os
 from flask import Flask, make_response, jsonify, request
 from flask_migrate import Migrate
 from models import db, Exercise, Workout, WorkoutExercise
-from schemas import (
-    ExerciseSchema, WorkoutSchema, WorkoutExerciseSchema,
-    ExerciseDetailSchema, WorkoutDetailSchema
-)
-from sqlalchemy.exc import IntegrityError
+from schemas import ExerciseSchema, ExerciseDetailSchema, WorkoutSchema, WorkoutDetailSchema, WorkoutExerciseSchema
 from marshmallow import ValidationError
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///instance/app.db'
+
+# set up the database path
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(BASE_DIR, "instance", "app.db")}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 migrate = Migrate(app, db)
 db.init_app(app)
 
-# Schema instances
+# create schema instances to use in routes
 exercise_schema = ExerciseSchema()
 exercises_schema = ExerciseSchema(many=True)
 exercise_detail_schema = ExerciseDetailSchema()
@@ -28,21 +25,18 @@ workouts_schema = WorkoutSchema(many=True)
 workout_detail_schema = WorkoutDetailSchema()
 
 workout_exercise_schema = WorkoutExerciseSchema()
-workout_exercises_schema = WorkoutExerciseSchema(many=True)
 
 
-# ==================== Exercise Endpoints ====================
+# --- Exercise routes ---
 
 @app.route('/exercises', methods=['GET'])
 def get_exercises():
-    """GET /exercises - List all exercises."""
     exercises = Exercise.query.all()
     return make_response(exercises_schema.dump(exercises), 200)
 
 
 @app.route('/exercises/<int:exercise_id>', methods=['GET'])
 def get_exercise(exercise_id):
-    """GET /exercises/<id> - Show a single exercise with associated workouts."""
     exercise = Exercise.query.get(exercise_id)
     if not exercise:
         return make_response(jsonify({'error': 'Exercise not found'}), 404)
@@ -51,13 +45,14 @@ def get_exercise(exercise_id):
 
 @app.route('/exercises', methods=['POST'])
 def create_exercise():
-    """POST /exercises - Create a new exercise."""
-    try:
-        data = request.get_json()
-        errors = exercise_schema.validate(data)
-        if errors:
-            return make_response(jsonify(errors), 400)
+    data = request.get_json()
 
+    # validate incoming data with schema first
+    errors = exercise_schema.validate(data)
+    if errors:
+        return make_response(jsonify(errors), 400)
+
+    try:
         exercise = Exercise(
             name=data['name'],
             category=data['category'],
@@ -66,9 +61,6 @@ def create_exercise():
         db.session.add(exercise)
         db.session.commit()
         return make_response(exercise_schema.dump(exercise), 201)
-
-    except ValidationError as e:
-        return make_response(jsonify({'errors': e.messages}), 400)
     except Exception as e:
         db.session.rollback()
         return make_response(jsonify({'error': str(e)}), 400)
@@ -76,48 +68,41 @@ def create_exercise():
 
 @app.route('/exercises/<int:exercise_id>', methods=['DELETE'])
 def delete_exercise(exercise_id):
-    """DELETE /exercises/<id> - Delete an exercise and associated workout_exercises."""
-    try:
-        exercise = Exercise.query.get(exercise_id)
-        if not exercise:
-            return make_response(jsonify({'error': 'Exercise not found'}), 404)
+    exercise = Exercise.query.get(exercise_id)
+    if not exercise:
+        return make_response(jsonify({'error': 'Exercise not found'}), 404)
 
-        db.session.delete(exercise)
-        db.session.commit()
-        return make_response(jsonify({}), 204)
-
-    except Exception as e:
-        db.session.rollback()
-        return make_response(jsonify({'error': str(e)}), 400)
+    db.session.delete(exercise)
+    db.session.commit()
+    return make_response(jsonify({}), 204)
 
 
-# ==================== Workout Endpoints ====================
+# --- Workout routes ---
 
 @app.route('/workouts', methods=['GET'])
 def get_workouts():
-    """GET /workouts - List all workouts."""
     workouts = Workout.query.all()
     return make_response(workouts_schema.dump(workouts), 200)
 
 
 @app.route('/workouts/<int:workout_id>', methods=['GET'])
 def get_workout(workout_id):
-    """GET /workouts/<id> - Show a single workout with its associated exercises."""
     workout = Workout.query.get(workout_id)
     if not workout:
         return make_response(jsonify({'error': 'Workout not found'}), 404)
+    # use detail schema so we get exercises + reps/sets/duration
     return make_response(workout_detail_schema.dump(workout), 200)
 
 
 @app.route('/workouts', methods=['POST'])
 def create_workout():
-    """POST /workouts - Create a new workout."""
-    try:
-        data = request.get_json()
-        errors = workout_schema.validate(data)
-        if errors:
-            return make_response(jsonify(errors), 400)
+    data = request.get_json()
 
+    errors = workout_schema.validate(data)
+    if errors:
+        return make_response(jsonify(errors), 400)
+
+    try:
         workout = Workout(
             date=data['date'],
             duration_minutes=data['duration_minutes'],
@@ -126,9 +111,6 @@ def create_workout():
         db.session.add(workout)
         db.session.commit()
         return make_response(workout_schema.dump(workout), 201)
-
-    except ValidationError as e:
-        return make_response(jsonify({'errors': e.messages}), 400)
     except Exception as e:
         db.session.rollback()
         return make_response(jsonify({'error': str(e)}), 400)
@@ -136,80 +118,55 @@ def create_workout():
 
 @app.route('/workouts/<int:workout_id>', methods=['DELETE'])
 def delete_workout(workout_id):
-    """DELETE /workouts/<id> - Delete a workout and associated workout_exercises."""
-    try:
-        workout = Workout.query.get(workout_id)
-        if not workout:
-            return make_response(jsonify({'error': 'Workout not found'}), 404)
+    workout = Workout.query.get(workout_id)
+    if not workout:
+        return make_response(jsonify({'error': 'Workout not found'}), 404)
 
-        db.session.delete(workout)
-        db.session.commit()
-        return make_response(jsonify({}), 204)
-
-    except Exception as e:
-        db.session.rollback()
-        return make_response(jsonify({'error': str(e)}), 400)
+    db.session.delete(workout)
+    db.session.commit()
+    return make_response(jsonify({}), 204)
 
 
-# ==================== WorkoutExercise Endpoints ====================
+# --- WorkoutExercise routes ---
 
 @app.route('/workouts/<int:workout_id>/exercises/<int:exercise_id>/workout_exercises', methods=['POST'])
 def add_exercise_to_workout(workout_id, exercise_id):
-    """POST /workouts/<workout_id>/exercises/<exercise_id>/workout_exercises - Add an exercise to a workout."""
+    workout = Workout.query.get(workout_id)
+    if not workout:
+        return make_response(jsonify({'error': 'Workout not found'}), 404)
+
+    exercise = Exercise.query.get(exercise_id)
+    if not exercise:
+        return make_response(jsonify({'error': 'Exercise not found'}), 404)
+
+    data = request.get_json()
+
+    errors = workout_exercise_schema.validate(data)
+    if errors:
+        return make_response(jsonify(errors), 400)
+
+    # check if this exercise is already in the workout
+    already_exists = WorkoutExercise.query.filter_by(
+        workout_id=workout_id,
+        exercise_id=exercise_id
+    ).first()
+    if already_exists:
+        return make_response(jsonify({'error': 'Exercise already added to this workout'}), 400)
+
     try:
-        workout = Workout.query.get(workout_id)
-        if not workout:
-            return make_response(jsonify({'error': 'Workout not found'}), 404)
-
-        exercise = Exercise.query.get(exercise_id)
-        if not exercise:
-            return make_response(jsonify({'error': 'Exercise not found'}), 404)
-
-        data = request.get_json()
-        errors = workout_exercise_schema.validate(data)
-        if errors:
-            return make_response(jsonify(errors), 400)
-
-        existing = WorkoutExercise.query.filter_by(
-            workout_id=workout_id,
-            exercise_id=exercise_id
-        ).first()
-        if existing:
-            return make_response(
-                jsonify({'error': 'This exercise is already in this workout'}),
-                400
-            )
-
-        workout_exercise = WorkoutExercise(
+        we = WorkoutExercise(
             workout_id=workout_id,
             exercise_id=exercise_id,
             reps=data.get('reps'),
             sets=data.get('sets'),
             duration_seconds=data.get('duration_seconds')
         )
-        db.session.add(workout_exercise)
+        db.session.add(we)
         db.session.commit()
-        return make_response(workout_exercise_schema.dump(workout_exercise), 201)
-
-    except ValidationError as e:
-        return make_response(jsonify({'errors': e.messages}), 400)
+        return make_response(workout_exercise_schema.dump(we), 201)
     except Exception as e:
         db.session.rollback()
         return make_response(jsonify({'error': str(e)}), 400)
-
-
-# Error handlers
-
-@app.errorhandler(404)
-def not_found(error):
-    """Handle 404 errors."""
-    return make_response(jsonify({'error': 'Resource not found'}), 404)
-
-
-@app.errorhandler(500)
-def server_error(error):
-    """Handle 500 errors."""
-    return make_response(jsonify({'error': 'Internal server error'}), 500)
 
 
 if __name__ == '__main__':
